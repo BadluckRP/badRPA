@@ -27,6 +27,7 @@ class badbot:
         self.janela_esta = self.status_janela()
         self.interface = interface
         self.caminho_prints = None
+        self.timeout = 10.0
 
     # verifica qual o nível de confiaça necessária para localizar um determinado elemento #
     def get_conf(self, img=None):
@@ -81,7 +82,6 @@ class badbot:
             return False
         # os.system('"{}"'.format(self.localPrograma))
         os.startfile('"{}"'.format(self.localPrograma))
-        return True
     
     # Retorna as cordenadas de uma img selecionada #
     def localizar(self, img=None):
@@ -95,22 +95,23 @@ class badbot:
         elemento = img
         if elemento is None:
             elemento = self.elemento_atual  
-        cords_region = self.localizar(elemento)
+        cords_region = self.espera_na_tela(elemento)
         return pag.locateOnScreen(elemento, confidence=self.conf, region=cords_region)
 
     # Espera na tela ate o elemento aparecer #
-    def espera_na_tela(self, img=None, timeout=60.0):
+    def espera_na_tela(self, img=None, timeout=0.0):
+        timeout = self.timeout
         elemento = img
         if elemento is None:
             elemento = self.elemento_atual  
-        tt = 0
+        tt = 0.0
         retorno = None
         while retorno is None and tt < timeout:
             retorno = self.localizar(elemento)
             time.sleep(0.5)
             tt += 0.5
         if retorno is None:
-            print(f'Elemento nao localizado:{elemento}')
+            print(f'-Elemento nao localizado:{elemento} n/-Nivel de confianca: {self.conf}')
         return retorno
     
     # Move para uma cordenada de um elemento passado ou pre setado #
@@ -118,30 +119,27 @@ class badbot:
         elemento = img
         if elemento is None:
             elemento = self.elemento_atual  
-        coords = self.localizar(elemento)
-        pag.moveTo(pag.center(coords))
+        pag.moveTo(pag.center(self.espera_na_tela(elemento)))
 
     # procura e clica em uma cordenada de um elemento em img passado ou pre setado #
     def clicar_em(self, img=None):
         elemento = img
         if elemento is None:
             elemento = self.elemento_atual        
-        coords = pag.center(self.localizar(elemento))
-        self.click(coords)
+        self.click(pag.center(self.espera_na_tela(elemento)))
         
     def click(self, coords):
-        coords = pag.center(coords)
         pag.click(coords.x, coords.y,
             button=self.interface.mouse['botao'],
             clicks=self.interface.mouse['cliques'])
         
     def clicar_por_dentro(self, regiao, img):
-        elemento = bot.localizar_dentro(regiao, img)
-        bot.click(elemento)
+        elemento = self.localizar_dentro(regiao, img)
+        self.click(pag.center(elemento))
     
     def esperar_clicar(self, img, tt=10):
-        elemento = bot.espera_na_tela(img, tt)
-        bot.click(elemento)
+        elemento = self.espera_na_tela(img, tt)
+        self.click(elemento)
 
     # escreve um determinado texto #
     def escrever(self, texto=None):
@@ -155,7 +153,7 @@ class badbot:
         if tecla is None: # verifica se uma tecla foi atribuida
             print('Nenhuma tecla foi atribuida')
         else:
-            pag.press(tecla, self.interface.keybo['apentar'])
+            pag.press(tecla, self.interface.keybo['apertar'])
     
     # tira um printscreen da tela e salva com texto especifico #
     def tira_ss(self, nome='noName', 
